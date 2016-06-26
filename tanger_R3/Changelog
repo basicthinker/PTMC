@@ -1,0 +1,12 @@
+DTMC 1.1.0
+  * Update to LLVM 2.8.
+  * tmlink now contains the transformation pass.
+  * Added support for C++ including exception handling code.
+  * Parse TM library specs about which code paths are to be generated.
+  * Parse annotations created for tm_pure, tm_callable, and tm_wrapper
+    function attributes.
+  * Added support for TM-library-based reporting.
+  * Several minor bug fixes and feature additions.
+
+DTMC 1.0.0
+  * Started Changelog.

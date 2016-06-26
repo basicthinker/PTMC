@@ -1,0 +1,65 @@
+The following describes how Tanger currently handles rollback data on a
+thread's stack. The basic problem is that in LLVM IR, loads/stores are
+explicit only if they access memory that has an address. For a thread (and
+thus the code executed by the thread), this is memory accessed through
+pointers (e.g., on the heap) or memory that is forced to be addressable
+using pointers (i.e., allocated by LLVM's \texttt{alloca} instruction).
+Explicit loads/stores are easily transformed because Tanger just needs to
+transform the respective \texttt{load}/\texttt{store} instructions.
+
+However, there can be more loads and stores in the machine code generated from
+the LLVM IR because LLVM assumes to have an unlimited number of registers but
+real machines don't have this (the stack is used as temporary storage).
+
+The first approach is to try to add explicit rollback code for the data that is
+written to the stack. This requires changing LLVM's code that generates binary
+code for each supported architecture (the backends). One could probably come up
+with a generic patch for that, but it's not likely that this would become a
+part of LLVM currently. Because requiring users to use a patched LLVM is not
+good (and the C backend would need another approach anyway), we don't use this
+first approach.
+
+The second approach is to perform a bulk stack save/restore on transaction
+begin. Consider a thread that is about to begin a transaction. Data on it's
+caller's stack frames is not visible and accesses to this data will use
+explicit loads/stores. Data on stack frames that were used by callees (e.g.,
+if the transaction begin is actually a restart), will not be needed and should
+not be rolled back anyway. Thus, we only need rollback for the current
+stack frame. LLVM offers intrinsics to get the stack frame's address
+(\texttt{llvm.frameaddress}) and intrinsics to save/restore the stack
+(\texttt{llvm.stacksave} and \texttt{llvm.stackrestore}), which probably
+return/set the stack pointer. If we roll back the stack frame (the area
+between stack pointer and frame address), the state for the thread should be
+completely restored on a restart.\footnore{\texttt{siglongjmp} restores
+registers and signal masks. Explicit memory accesses are rolled back by the
+STM. Memory allocation is shared with other threads and the application uses
+memory allocation like a black box, so we don't need rollback there.}
+
+This approach is fairly easy to implement and should work on a lot of
+architectures. However, it has some (potential) problems.
+First, application runtime overheads can be significantly larger in case
+of transactions that only modify a small subset of large stack frames, or no
+data on the stack at all (which might be a common case).
+
+Second, the code on the path between the transaction begin marker and actual
+instructions that restore the stack content could use space on the stack as
+well. We try to solve this by letting Tanger insert LLVM code directly at the
+begin instead of delegating stack restore to STM functions. Frame
+address and stack pointer are obtained directly after the call to
+\texttt{sigsetjmp}. Stack save/restore is performed by inserting calls to
+\texttt{memcpy} (using LLVM intrinsics), which is probably not going to be
+inlined, and if it uses stack space, this will probably be on a new frame that
+it outside of the memory area that is restored.
+
+We do ask the STM to return a memory area for stack save/restore between
+getting the stack frame's addresses and the actual save/restore instructions.
+If this STM function and other STM functions after the save/restore are
+inlined, there could be common expressions stored on the stack. However, the
+stack area is of no use to other parts of the STM, so it's outcome and
+whether it was executed for save or restore probably does not affect the rest
+of the STM. We could avoid this potential problem by disallowing inlining of
+the STM function that returns the memory area for stack contents.
+
+Also see the discussion of code reordering by the compiler around transaction
+begin and end. Architectures that have a different stack concept could also
+require a different solution.

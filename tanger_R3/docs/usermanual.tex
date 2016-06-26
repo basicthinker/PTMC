@@ -1,0 +1,41 @@
+
+\section{User Manual}
+
+The following should eventially become a real manual. For now, you'll find
+more detailed descriptions of some of the issues here.
+
+\subsection{Indirect Calls / Function Pointers}
+
+When a function is to be called during a transaction, the compiler must make
+sure that the code that will be executed is the transactional version of this
+function. If the call is indirect (i.e., the call target is not fixed in
+the program code), the compiler has to make sure that the input function
+pointer to nontransactional code is converted into a pointer to the
+respective transactional version of the function.
+
+There are basically two ways to perform this mapping: (1) getting the
+transaction version directly from somwhere in the binary code of the original
+function and (2) looking it up in some data structure. The former is
+difficult because Tanger operates on the LLVM intermediate representation of
+the program and we do not want to change backends. The latter is easy to
+implement but has higher runtime costs.
+
+For now, only the latter option is implemented. It uses the lookup functions
+implemented in Tanger's \texttt{stmsupport} library. This means that you have
+to build link this library if you want to use indirect calls. If a there is
+an indirect call that cannot be resolved at runtime, the stmsupport library
+will abort the execution of the program.
+
+To use indirect calls, you must make sure that Tanger knows for which functions
+it has to create a mapping from the nontransactional to the transactional
+version. First, you can mark respective functions explicitely by putting a call
+to the \texttt{tanger_indirect_call_target()} function into the respective
+function (the call will be detected and removed by Tanger). Second, you can
+let Tanger assume that all functions whose address is taken somewhere in the
+program are potential targets of transactional indirect calls. If
+you compile your complete program using Tanger, then there is no
+need for any annotations in the source code of your program but the number of
+pairs can potentially be larger and thus increase the lookup overhead.
+Currently, the second option is enabled by default.
+
+

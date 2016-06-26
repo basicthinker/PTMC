@@ -1,0 +1,10 @@
+/* Configuration */
+/* Define if DSA is available. */
+#undef ENABLE_DSA
+
+/* DSA Obj dir */
+#undef DSAOBJDIR
+
+/* DSA Src dir */
+#undef DSASRCDIR
+

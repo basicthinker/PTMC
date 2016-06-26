@@ -1,0 +1,23 @@
+//===----------------------------------------------------------------------===//
+//                  LICENSE
+//===----------------------------------------------------------------------===//
+
+The software inside the DTMC infrastructure includes different licenses.
+There is a description inside the sources in this locations:
+
+ llvm-2.8-R3/LICENSE.TXT 
+ llvm-gcc-R3/COPYING
+ llvm-gcc-R3/COPYING.LIB
+ tanger_R3/LICENSE.txt
+
+
+//===-----------------------
+
+   VELOX project
+   -------------
+
+European research consortium VELOX supports programming of multi-core systems.
+
+The research project will aim to make parallel programming easier for 
+the masses by developing integrated Transactional Memory systems 
+for multi-core computers.

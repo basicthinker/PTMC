@@ -1,0 +1,37 @@
+=== Q: Why are there undefined references during linking?
+
+Function starting with tanger_... belong to the application-level interface
+(see tanger/include/tanger-stm.h). If you have unresolved references to these
+when linking, then the pass did not transform some code because of errors in
+the use of the marker functions. For example, a missing tanger_commit() call
+is an error, and the function containing this incomplete transaction will not
+be transformed. Use the debug output (add '-debug' to the opt command line
+that is displayed by make) to locate the exact error.
+
+Functions starting with tanger_stm_... belong to the interface provided by
+the STM. If you have undefined references to these, then you either you
+did not link in the STM library or the STM library does not implement all the
+functions of the STM interface assumed by Tanger.
+
+=== Q: "ERROR in function 'foobar' block '': block has level 0 but level 1
+is required:"
+
+There is control flow path in the program that contains a call to
+tanger_commit() but not enough calls to tanger_begin(). In the example case,
+you call tanger_commit() but there is not matching tanger_begin().
+
+=== Q: "ERROR in function 'foobar' block '': return block has transaction
+level -1 (must be zero):"
+
+There are tanger_begin()'s without tanger_commit()'s or vice-versa. In this
+particular case, there is control flow path in the program that contains a
+call to tanger_commit() but not enough calls to tanger_begin().
+
+=== Q: "WARNING in function 'tanger_txnal_sig_term' block 'cond_next': store to
+volatile location"
+
+We assume that a transactional load/store to a volatile variable is likely a
+bug because you mostly use volatile in concurrent code. STMs typically
+do not provide strong isolation and mixing custom concurrent code and
+transactions is not always safe, so Tanger warns when it transforms such a
+load/store. Please check your code for correctness.

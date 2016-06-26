@@ -1,0 +1,126 @@
+MAKEFILEREL     ?= ..
+TANGERINCLUDE   ?= $(MAKEFILEREL)/../../include
+INCLUDE         += -I $(TANGERINCLUDE)
+LLVMBUILD       ?= $(shell llvm-config --build-mode)
+STMLIBDIR       ?= $(MAKEFILEREL)/../../$(LLVMBUILD)/lib/
+SEQUENTIALLIB   ?= $(MAKEFILEREL)/../../$(LLVMBUILD)/lib/libno-tanger-stm.bc
+STMSUPPORTDIR   ?= $(MAKEFILEREL)/../../$(LLVMBUILD)/lib/
+TMLINK          ?= $(MAKEFILEREL)/../../$(LLVMBUILD)/bin/tmlink
+TMSUPPORTFILE   ?= $(STMLIBDIR)/libtanger-stm.support
+EXTRAPASSES     ?=
+PASSESTORUN     ?= -tanger
+PASSESTORUNPOST ?=
+NATIVELIBSPRE   ?=
+NATIVELIBS      += -lpthread
+BASELINKOPTS    ?=
+NATIVELINKOPTS  ?= -g
+HEADERS         ?= $(wildcard $(INCLUDE)/*.h)
+# Get reporting flags
+#TANGERMAKEFILE := $(MAKEFILEREL)/../../Makefile.common
+#ifneq ($(wildcard $(TANGERMAKEFILE)),)
+#$(eval $(shell egrep ^ENABLE_REPORTING= $(TANGERMAKEFILE)))
+#endif
+ifneq ($(wildcard $(TMLINK)),)
+$(eval $(shell $(TMLINK) -print-config=ENABLE_REPORTING))
+endif
+ifeq ($(ENABLE_REPORTING),1)
+DEF_ENABLE_REPORTING := -DENABLE_REPORTING
+endif
+#CFLAGS          ?= -Wall -g
+CFLAGS          += -Wall --gnu-tm $(DEF_ENABLE_REPORTING)
+CXXFLAGS        += -Wall $(DEF_ENABLE_REPORTING)
+LINKOPTS        ?=
+OPT             ?= opt
+LLVMGCC         ?= llvm-gcc
+LLVMGXX         ?= llvm-g++
+LLVMDIS         ?= llvm-dis
+LLVMLD          ?= llvm-ld
+LLC		?= llc
+GCC		?= gcc
+
+# Set this to enable debug output and statistics for the LLVM pass
+#TANGERPASSOPTS ?= -debug -stats
+
+# Add -static below to produce static binaries.
+TMLINKFLAGS     ?= \
+  -stmsupport=$(STMSUPPORTDIR) -stmlib=$(STMLIBDIR) \
+  $(LINKOPTS) $(TANGERPASSOPTS)
+
+ifneq ($(TMSUPPORTFILE),)
+  TMLINKFLAGS += -tm-support-file=$(TMSUPPORTFILE)
+endif
+
+.PHONY: all clean
+
+all: $(APPLICATIONS)
+
+# native binary from input files (using tmlink)
+# TODO: flags for final linking phase (eg, -lpthread), libtangerstm.a, tanger opts, debug mode
+define TMLINK_TEMPLATE
+$(1): $$($(1)_OBJS) $(TMLINK) $(STMSUPPORTDIR)/stmsupport.bc $(STMLIBDIR)/libtanger-stm.bc $(STMLIBDIR)/libtanger-stm.a
+	$$(TMLINK) $$(TMLINKFLAGS) -o $$@ $$($(1)_OBJS)
+
+$(1)-sequential: $$($(1)_OBJS) $(SEQUENTIALLIB)
+	$(LLVMLD) -link-as-library -o $$@.bc $$($(1)_OBJS) $(SEQUENTIALLIB)
+	$(LLC) -f -o $$@.s $$@.bc
+	$(GCC) -o $$@ $$@.s $(NATIVELIBS) $(NATIVELINKOPTS)
+endef
+
+$(foreach app,$(APPLICATIONS),$(eval $(call TMLINK_TEMPLATE,$(app))))
+
+### Steps that you would have to run if not using tmlink:
+#ifeq ($(shell uname),Darwin)
+#  LIBTYPE       ?= dylib
+#else
+#  LIBTYPE       ?= so
+#endif
+# TANGERPASS      ?= $(MAKEFILEREL)/../../$(LLVMBUILD)/lib/libtanger.$(LIBTYPE)
+#
+# native binary from .bc:
+#$(APPLICATIONS): %: %-tangerstm.bc $(STMLIBDIR)/libtanger-stm.a
+#	$(LLC) -f -o $(patsubst %.bc, %.s, $<) $<
+#	$(GCC) -o $@ $(patsubst %.bc, %.s, $<) $(NATIVELIBSPRE) $(STMLIBDIR)/libtanger-stm.a $(NATIVELIBS) $(NATIVELINKOPTS) 
+#
+# link in .bc parts of STM
+#%-tangerstm.bc: %-tanger.bc $(STMLIBDIR)/libtanger-stm.bc $(STMSUPPORTDIR)/stmsupport.bc
+#	$(LLVMLD) -link-as-library -o $@ $^
+#%-tangerstm.bc: %-tanger.bc
+#	@echo ERROR: STM library missing: $(STMLIBDIR)/libtanger-stm.bc or $(STMSUPPORTDIR)/stmsupport.bc
+#	@false
+#
+# run pass over combined
+#%-tanger.bc: %-tangerbase.bc $(TANGERPASS)
+#	$(OPT) $(EXTRAPASSES) -load $(TANGERPASS) -internalize -mem2reg -raiseallocs \
+#		$(PASSESTORUN) -globaldce $< -o $@.tmp.bc -f $(TANGERPASSOPTS)
+#	$(OPT) $(EXTRAPASSES) -load $(TANGERPASS) -deadargelim \
+#		$(PASSESTORUNPOST) $@.tmp.bc -o $@ -f $(TANGERPASSOPTS)
+#%-tanger.bc: %-tangerbase.bc
+#	@echo ERROR: Tanger compiler pass missing: $(TANGERPASS)
+#	@false
+#
+#$(patsubst %, %-sequential, $(APPLICATIONS)): %-sequential: %-tangerbase.bc $(SEQUENTIALLIB)
+#	$(LLVMLD) -link-as-library -o $@.bc $^
+#	$(LLC) -f -o $@.s $@.bc
+#	$(GCC) -o $@ $@.s $(NATIVELIBS) $(NATIVELINKOPTS)
+
+# create sequential versions (use with care!)
+seq: $(patsubst %, %-sequential, $(APPLICATIONS))
+
+
+# .bc from sources
+%.bc: %.c $(HEADERS)
+	$(LLVMGCC) $(INCLUDE) -emit-llvm -c $(CFLAGS) -o $@ $<
+%.bc: %.cpp $(HEADERS)
+	$(LLVMGXX) $(INCLUDE) -emit-llvm -c $(CXXFLAGS) -o $@ $<
+
+# disassemble all .bc
+dis: $(patsubst %.bc, %.ll, $(wildcard *.bc)) \
+    $(patsubst %-tangerbase.bc, %-tanger.ll, $(wildcard *.bc))
+%.ll: %.bc
+	$(LLVMDIS) $< -f -o $@
+
+clean:
+	rm -f *.bc *.ll *.s $(APPLICATIONS)
+
+install:
+	@echo make install not supported.

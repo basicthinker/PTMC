@@ -1,0 +1,11 @@
+The following issues, problems, or missing features need a larger description
+and are thus not contained in the "TODO.txt" file:
+\begin{description}
+ \item[Code reordering around transaction begin end] There are some reasons
+why this could be a problem, and there are reasons why it probably isn't a
+problem. This needs more work. Aspects of this problem are (1)
+correctness when rolling back data on the stack, (2) whether this can violate
+the semantics of transactions especially when using transactions for error
+handling, and (3) potential performance gains of reordering and moving
+code into or out of transactions (which is strongly related to (2)).
+\end{description}

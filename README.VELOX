@@ -1,0 +1,175 @@
+//===----------------------------------------------------------------------===//
+//                  Steps for building DTMC infrastructure
+//===----------------------------------------------------------------------===//
+
+
+//===----------------------- Contact
+
+Contact information: Martin Nowack (martin@se.inf.tu-dresden.de)
+                     Torvald Riegel (torvald@se.inf.tu-dresden.de)
+
+//===----------------------- Contents
+
+This directory contains the Dresden Compiler Infrastructure:
+
+   - LLVM_28_R3 : Low Level Virtual Machine 2.8
+                  (available as well under
+                  http://www.llvm.org/releases/download.html#2.8 )
+   - LLVM_GCC_R3: llvm-gcc-4.2 (based on LLVM 2.8) with support for
+                  Transactional Memory language extensions 
+   - TANGER_R3  : Tanger - Transactification tool
+                  Feature Freeze 3
+
+
+//===----------------------- Building the Dresden TM Compiler
+
+//===----------------------- Prerequisites
+LLVM-GCC front end needs at least the version 2.20 of binutils. If your system 
+does not have this version, We recommend to replace your current version for a 
+newer one or to install the new version in a local folder a reconfigure your 
+environment values. For example, if you are using bash and you installed the 
+binutils under /opt/binutils-2.20 folder, you can use the following 
+configuration:
+
+   export PATH="/opt/binutils-2.20/bin:$PATH"
+   export LD_LIBRARY_PATH="/opt/binutils-2.20/lib:$LD_LIBRARY_PATH"
+   export LD_RUN_PATH="/opt/binutils-2.20/lib:$LD_RUN_PATH"
+
+//===----------------------- Introduction
+
+The three components described above should be configured, compiled and 
+installed in this order:
+
+   1.- LLVM_28_R3
+   2.- LLVM_GCC_R3
+   3.- TANGER_R3
+
+
+This file will talk you through the configuration steps necessary to get DTMC 
+up and running on Linux. We will not discuss LLVM-GCC/LLVM itself (the LLVM 
+projects have its own documentation available) nor will we talk about 
+specialized setups that might be very interesting for LLVM setups but are 
+not LLVM-related.
+
+//===----------------------- Installation
+
+0.- Unpack the source files (LLVM_28, LLVM_GCC_R3 and TANGER) in a working 
+directory. LLVM will need the LLVM-GCC sources location for its installation.
+You can unpack the files using "tar xvf filename.tar.gz -C destinationFolder"
+
+1.-   LLVM 2.8 Release 3
+1.a.- Configure LLVM 2.8 Release 3
+
+   Run configure from the folder that you unpack LLVM_28.
+   This is an example of parameters that can be used:
+   ./configure --prefix=/opt/llvm/2.8 --with-llvmgccdir=/opt/llvm-gcc-tud/2.8 --enable-targets=x86,x86_64
+
+   The "prefix" flag specifies the location for the installation. 
+   The value "/opt/llvm/2.8/" will be used throughout the following text as an example. Please change
+   all occurrences according to your needs.
+   The "with-llvmgccdir" flag specifies the location of the installed directory for the GCC frontend,
+   which will be installed at the next steps.
+
+
+   For additional information please refer to the documentation of LLVM
+   http://www.llvm.org/releases/2.8/docs/GettingStarted.html
+
+1.b.- Compile and test LLVM 2.8 Release 3
+
+   make
+   make check
+
+1.c.- Install LLVM 2.8 Release 3
+   
+   make install
+
+2.-   LLVM-GCC R3
+2.a.- Configure LLVM-GCC R3
+
+   Update the environment values with the location from the previous 
+   installation:
+
+   export PATH="/opt/llvm/2.8/bin/:$PATH"
+   export LD_LIBRARY_PATH="/opt/llvm/2.8/lib:$LD_LIBRARY_PATH"
+   export LD_RUN_PATH="/opt/llvm/2.8/lib:$LD_RUN_PATH"
+
+   Run configure from the folder that you unpack LLVM_GCC_R3.
+   This is an example of parameters that can be used:
+   ./configure --prefix=/opt/llvm-gcc-tud/2.8 --program-prefix=llvm- --enable-llvm=/opt/llvm/2.8 --disable-shared  --enable-languages=c,c++
+   
+   The "enable-llvm" flag specifies the location of llvm installed 
+   in the previous step.
+
+   If you want just pure 64 bit compiler, configure with --disable-multilib, 
+   without this flag, you will get both version (32 and 64 bits).
+
+   For additional information please refer to the documentation of LLVM
+   http://www.llvm.org/releases/2.8/docs/GettingStarted.html
+
+
+
+2.b.- Compile and test LLVM-GCC R3
+
+   make LLVM_VERSION=2.8
+   make check
+
+2.c.- Install LLVM-GCC R3
+  
+   make install
+
+3.-   TANGER
+3.a.- Configure TANGER R3
+   Run configure from the folder that you unpack TANGER.
+   NOTE: TANGER should be compiled just from the src directory.
+   You can not build it from another directory. The compilation will 
+   not succeed.
+
+   Update the environment values with the location from the previous 
+   installation:
+ 
+   export PATH="/opt/llvm-gcc-tud/2.8/bin/:$PATH"
+   export LD_LIBRARY_PATH="/opt/llvm-gcc-tud/2.8/lib:$LD_LIBRARY_PATH"
+   export LD_RUN_PATH="/opt/llvm-gcc-tud/2.8/lib:$LD_RUN_PATH"
+
+   Run configure from the folder that you unpack TANGER.
+   This is an example of parameters that can be used:
+   ./configure --prefix=/opt/tanger/current --with-llvmsrc=/opt/llvm/2.8/src --with-llvmobj=/opt/llvm/2.8/build
+
+
+3.b.- Compile and test TANGER R3
+
+   make check
+
+3.c.- Install TANGER R3
+  
+   make install
+
+4.- If you want to use this set of tools, and you installed the infrastructure 
+using an explicit folder, you should set your environment variables according 
+to these locations. For example:
+
+   export PATH="/opt/binutils-2.20/bin:$PATH"
+   export LD_LIBRARY_PATH="/opt/binutils-2.20/lib:$LD_LIBRARY_PATH"
+   export LD_RUN_PATH="/opt/binutils-2.20/lib:$LD_RUN_PATH"
+
+   export PATH="/opt/llvm/2.8/bin/:$PATH"
+   export LD_LIBRARY_PATH="/opt/llvm/2.8/lib:$LD_LIBRARY_PATH"
+   export LD_RUN_PATH="/opt/llvm/2.8/lib:$LD_RUN_PATH"
+
+   export PATH="/opt/llvm-gcc-tud/2.8/bin/:$PATH"
+   export LD_LIBRARY_PATH="/opt/llvm-gcc-tud/2.8/lib:$LD_LIBRARY_PATH"
+   export LD_RUN_PATH="/opt/llvm-gcc-tud/2.8/lib:$LD_RUN_PATH"
+
+   export PATH="/opt/tanger/current/bin/:$PATH"
+   export LD_LIBRARY_PATH="/opt/tanger/current/lib:$LD_LIBRARY_PATH"
+   export LD_RUN_PATH="/opt/tanger/current/lib:$LD_RUN_PATH"
+
+//===----------------------- VELOX project
+
+European research consortium VELOX supports programming of  multi-core systems
+
+Research project will aim to make parallel programming easier for the masses 
+by developing integrated Transactional Memory systems for multi-core computers.
+
+This document was prepared by Javier Arias. If you have any comment or 
+suggestion feel free to send an email to javier.arias@bsc.es.

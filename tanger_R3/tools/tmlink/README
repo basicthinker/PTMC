@@ -1,0 +1,36 @@
+TMLINK
+=======
+tmlink is a linker that makes it easier to use Tanger. It (1) links all
+compiled object files into a single LLVM bitcode module, (2) runs TM
+transformations on this module, (3) links the STM core and support
+libraries, (4) and compiles the resulting bitcode to native code.
+
+
+INSTALLATION
+============
+tmlink is built automatically when Tanger is built.
+
+USAGE
+=====
+To use tmlink several arguments have to be provided.
+-stmlib=<string>       - path to libtanger-stm.bc
+-stmsupport=<string>   - path to stmsupport.bc library
+-tanger=<string>       - path to libtanger.so file (the LLVM pass)
+-tanger-arg=<string>   - additional arguments for tanger
+
+-L=<string>            - Search path for library
+-l=<string>            - Add library when linking
+-g                     - enable debug information (disables optimizations)
+-o=<file>              - Output file name
+
+Use tmlink --help to refer to more information.
+
+tmlink inputfiles -o outputfile
+
+Thats all.
+
+License and copying
+-------------------
+
+The license is the GNU General Public License version 2, except for files
+that state otherwise, so check the files.
