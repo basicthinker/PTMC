@@ -1,8 +1,12 @@
 language: c
 compiler: gcc
+cache:
+  directories:
+    - $TRAVIS_BUILD_DIR/
+  timeout: 600
 before_script:
  - sudo apt-get update -qq
- - sudo apt-get install -yq cmake
+ - sudo apt-get install -yq binutils
  - sudo apt-get install -yq build-essential g++-multilib m4 flex bison
  - sudo apt-get install -yq libgmp-dev libmpfr-dev
  - sudo update-alternatives --install /usr/bin/ld ld /usr/bin/gold 10
