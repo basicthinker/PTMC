@@ -42,7 +42,7 @@ GCC		?= gcc
 #TANGERPASSOPTS ?= -debug -stats
 
 # Add -static below to produce static binaries.
-TMLINKFLAGS     ?= \
+TMLINKFLAGS     ?= -load=$(STMLIBDIR)/libtanger.so \
   -stmsupport=$(STMSUPPORTDIR) -stmlib=$(STMLIBDIR) \
   $(LINKOPTS) $(TANGERPASSOPTS)
 

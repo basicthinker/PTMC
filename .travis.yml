@@ -1,0 +1,44 @@
+language: c
+compiler: gcc
+before_script:
+ - sudo apt-get update -qq
+ - sudo apt-get install -yq cmake
+ - sudo apt-get install -yq build-essential g++-multilib m4 flex bison
+ - sudo apt-get install -yq libgmp-dev libmpfr-dev
+ - sudo update-alternatives --install /usr/bin/ld ld /usr/bin/gold 10
+script:
+ - export PTMC_ROOT=$(pwd)
+ - export PTMC_HOME=$(pwd)/install
+ - mkdir -p $PTMC_HOME
+ - cd $PTMC_ROOT/llvm-2.8-R3/
+ - ./configure -q --prefix=$PTMC_HOME/llvm/2.8 --with-llvmgccdir=$PTMC_HOME/llvm-gcc/2.8 --enable-targets=x86_64
+ - make -s
+ - make -s install
+ - export PATH="$PTMC_HOME/llvm/2.8/bin:$PATH"
+ - export LD_LIBRARY_PATH="$PTMC_HOME/llvm/2.8/lib:$LD_LIBRARY_PATH"
+ - export LD_RUN_PATH="$PTMC_HOME/llvm/2.8/lib:$LD_RUN_PATH"
+ - cd $PTMC_ROOT/llvm-gcc-R3
+ - mkdir build; cd build
+ - ../configure -q --prefix=$PTMC_HOME/llvm-gcc/2.8 --program-prefix=llvm- --enable-llvm=$PTMC_HOME/llvm/2.8 --disable-shared --disable-multilib --enable-languages=c,c++
+ - export LIBRARY_PATH=/usr/lib/$(gcc -print-multiarch)
+ - export C_INCLUDE_PATH=/usr/include/$(gcc -print-multiarch)
+ - export CPLUS_INCLUDE_PATH=/usr/include/$(gcc -print-multiarch)
+ - make -s LLVM_VERSION=2.8
+ - make -s install
+ - export PATH="$PTMC_HOME/llvm-gcc/2.8/bin:$PATH"
+ - export LD_LIBRARY_PATH="$PTMC_HOME/llvm-gcc/2.8/lib:$LD_LIBRARY_PATH"
+ - export LD_RUN_PATH="$PTMC_HOME/llvm-gcc/2.8/lib:$LD_RUN_PATH"
+ - cd $PTMC_ROOT/tanger_R3/
+ - ./configure -q --prefix=$PTMC_HOME/tanger/current --with-llvmsrc=$PTMC_ROOT/llvm-2.8-R3 --with-llvmobj=$PTMC_ROOT/llvm-2.8-R3
+ - make -si
+ - cd $PTMC_ROOT/llvm-2.9/
+ - mkdir build; cd build
+ - ../configure -q --prefix=$PTMC_HOME/llvm/2.9 --enable-targets=x86_64
+ - make -s
+ - make -s install
+ - export PATH="$PTMC_HOME/llvm/2.9/bin:$PATH"
+ - export LD_LIBRARY_PATH="$PTMC_HOME/llvm/2.9/lib:$LD_LIBRARY_PATH"
+ - export LD_RUN_PATH="$PTMC_HOME/llvm/2.9/lib:$LD_RUN_PATH"
+ - cd $PTMC_ROOT/tanger_R3/
+ - make -s
+ - make -s install
