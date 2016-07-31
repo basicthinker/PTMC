@@ -1,0 +1,14 @@
+build
+install
+Debug
+Release
+*.o
+*.html
+*.ps
+*.tar.gz
+*.tmp
+*.gen
+Makefile.config
+config.log
+config.status
+tanger_R3/include/tanger/config.h
