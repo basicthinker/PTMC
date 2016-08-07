@@ -15,7 +15,7 @@ ENABLE_AB ?= -fgnu-tm
 LLVMBUILD ?= $(shell llvm-config --build-mode)
 STMSUPPORTDIR ?= ../../$(LLVMBUILD)/lib/
 STMLIBDIR     ?= ../../$(LLVMBUILD)/lib/
-TMLINKFLAGS ?= -stmsupport=$(STMSUPPORTDIR) -stmlib=$(STMLIBDIR)
+TMLINKFLAGS ?= -load=$(STMLIBDIR)/libtanger.so -stmsupport=$(STMSUPPORTDIR) -stmlib=$(STMLIBDIR)
 TMLINK ?= ../../$(LLVMBUILD)/bin/tmlink
 
 test: $(PROGRAMS)
